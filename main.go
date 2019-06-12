@@ -1,20 +1,24 @@
 package main
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/astaxie/beego/logs"
 	"github.com/tidwall/gjson"
 	"github.com/valyala/fasthttp"
 	"io/ioutil"
+	"strconv"
 	"time"
 )
 
-var tokenChan = make(chan string, 100)
-var BuyRequestChan = make(chan string, 100)
+var BuyRequestChan = make(chan string, 10000000)
 
 var cookie = ""
+
+type HttpClient struct {
+	Cookie string
+}
 
 type UsdtTemplate struct {
 	ID              string `json:"id"`
@@ -24,6 +28,7 @@ type UsdtTemplate struct {
 }
 
 const (
+	format = "2006-01-02 15:04:05.000"
 	//httpsUrlToken  = "https://www.fcoin.pro/openapi/v1/lightning_deals/DBF9uRg3WBPwBCLKs0HrOQ/token"
 	httpsUrlToken  = "https://www.fcoin.pro/openapi/auth/v1/lightning_deals/A-oY7xm0zzPtE3g7wFDx6A/token"
 	httpsUrlBlance = "https://exchange.fcoin.pro/openapi/v3/assets/wallet/balances"
@@ -44,43 +49,67 @@ func TestBlance() {
 	req.Header.SetUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36")
 	req.Header.SetMethod("GET")
 	resp := fasthttp.AcquireResponse()
-	cfg := &tls.Config{
-		MinVersion:               tls.VersionTLS12,
-		CurvePreferences:         []tls.CurveID{tls.X25519, tls.CurveP256},
-		PreferServerCipherSuites: true,
-		CipherSuites: []uint16{
-			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-		},
-	}
-	client := &fasthttp.Client{
-		TLSConfig: cfg,
-	}
+	client := &fasthttp.Client{}
 	if err := client.Do(req, resp); err != nil {
 		println("Error:", err.Error())
 	} else {
 		bodyBytes := resp.Body()
 		available := gjson.GetBytes(bodyBytes, "data.balances.5.available")
-		fmt.Println(fmt.Sprintf(" USDT Blance %s", available.String()))
+		logs.Info("USDT Balance %s", available.String())
 	}
 }
 
-func main() {
+func initLog() (err error) {
+	//初始化日志库
+	config := make(map[string]interface{})
+	config["filename"] = "./ssynflood.log"
+	config["level"] = 6;
+	configStr, err := json.Marshal(config)
+	if err != nil {
+		fmt.Println(" json.Marshal failed,err:", err)
+		return
+	}
+	logs.SetLogger(logs.AdapterFile, string(configStr))
+	return
+}
 
-	// ./ssynflood --name "zhangjianxin" --amount "50000.00000000" --type "usdt"  --id "DBF9uRg3WBPwBCLKs0HrOQ"
-	var name, amount, typek, ids string
+func loopWorker(data *UsdtTemplate, timeOut string) {
+	tokenChan := make(chan string, 1000000)
+	t, _ := strconv.ParseInt(timeOut, 10, 64)
+	ticker := time.NewTicker(time.Duration(t) * time.Millisecond)
+	go func() {
+		for t := range ticker.C {
+			fmt.Println("Tick at", t)
+			go GetToken(tokenChan, cookie)
+
+			go BuyRequest(tokenChan, cookie, data)
+		}
+	}()
+	time.Sleep(60 * time.Minute)
+	ticker.Stop()
+}
+
+func main() {
+	err := initLog()
+	if err != nil {
+		return
+	}
+	logs.Info("Start Successfully")
+	// ./ssynflood --time "1000" --name "zhangjianxin" --amount "50000.00000000" --type "usdt"  --id "DBF9uRg3WBPwBCLKs0HrOQ"
+	var name, amount, typek, ids, timeout string
 	flag.StringVar(&name, "name", "zhangjianxin", "name")
 	flag.StringVar(&amount, "amount", "50000.00000000", "amount")
 	flag.StringVar(&typek, "type", "usdt", "type")
 	flag.StringVar(&ids, "id", "DBF9uRg3WBPwBCLKs0HrOQ", "id")
+	flag.StringVar(&timeout, "time", "1000", "time")
 
 	flag.Parse()
-
-	fmt.Println("用户名:", name)
-	fmt.Println("使用资金类型:", typek)
-	fmt.Println("买入货币ID:", ids)
-	fmt.Println("买入数量:", amount)
+	logs.Info("TimeOut:", timeout)
+	logs.Info("用户名:", name)
+	logs.Info("使用资金类型:", typek)
+	logs.Info("买入货币ID:", ids)
+	logs.Info("买入数量:", amount)
+	logs.Info("启动时间:", time.Now().Format(format))
 
 	data := &UsdtTemplate{
 		ID:              ids,
@@ -92,62 +121,42 @@ func main() {
 	cookie = config[name]
 
 	TestBlance()
-
-	var i1 string
-	for {
-		select {
-		case i1 = <-tokenChan:
-			if len(i1) != 0 {
-				go BuyRequest(i1, cookie, data)
-			}
-		default:
-			//fmt.Println(fmt.Sprintf("Get Token.... %d", len(i1)))
-		}
-		go GetToken(cookie)
-	}
+	loopWorker(data, timeout)
 }
 
-func GetToken(cookie string) {
+func GetToken(tokenChan chan string, cookie string) {
+	logs.Info("GetToken Start %s ", time.Now().Format(format))
 	e := time.Now()
-	timer := time.AfterFunc(time.Microsecond*1000, func() {
-		req := fasthttp.AcquireRequest()
-		req.SetRequestURI(httpsUrlToken)
-		req.Header.Set("Cookie", cookie)
-		req.Header.SetUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36")
-		req.Header.SetMethod("POST")
-		resp := fasthttp.AcquireResponse()
-		cfg := &tls.Config{
-			MinVersion:               tls.VersionTLS12,
-			CurvePreferences:         []tls.CurveID{tls.X25519, tls.CurveP256},
-			PreferServerCipherSuites: true,
-			CipherSuites: []uint16{
-				tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-			},
-		}
-		client := &fasthttp.Client{
-			TLSConfig: cfg,
-		}
-		if err := client.Do(req, resp); err != nil {
-			println("Error:", err.Error())
-		} else {
-			bodyBytes := resp.Body()
-			var reData = map[string]string{}
-			json.Unmarshal(bodyBytes, &reData)
-			fmt.Println(string(bodyBytes))
-			tokenChan <- reData["data"]
-		}
-		fmt.Println("time ",time.Since(e))
-
-	})
-	defer timer.Stop()
+	req := fasthttp.AcquireRequest()
+	req.SetRequestURI(httpsUrlToken)
+	req.Header.Set("Cookie", cookie)
+	req.Header.SetUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36")
+	req.Header.SetMethod("POST")
+	resp := fasthttp.AcquireResponse()
+	defer func() {
+		// 用完需要释放资源
+		fasthttp.ReleaseResponse(resp)
+		fasthttp.ReleaseRequest(req)
+	}()
+	client := &fasthttp.Client{
+	}
+	if err := client.Do(req, resp); err != nil {
+		println("Error:", err.Error())
+	} else {
+		bodyBytes := resp.Body()
+		var reData = map[string]string{}
+		json.Unmarshal(bodyBytes, &reData)
+		logs.Info("[Get]Token 可用数量： %d", len(tokenChan))
+		logs.Info("GetToken Response ", string(bodyBytes))
+		tokenChan <- reData["data"]
+	}
+	logs.Info("[Consumption] %s [GetToken Start] %s End %s ", time.Since(e).String(), e.Format(format), time.Now().Format(format))
 
 }
 
-func BuyRequest(token string, cookie string, data *UsdtTemplate) {
-	fmt.Println(fmt.Sprintf("token = %s", token))
-
+func BuyRequest(tokenChan chan string, cookie string, data *UsdtTemplate) {
+	logs.Info("BuyRequest Start %s ", time.Now().Format(format))
+	e := time.Now()
 	req := fasthttp.AcquireRequest()
 	req.SetRequestURI(httpsUrlBuy)
 	req.Header.Set("Cookie", cookie)
@@ -155,33 +164,26 @@ func BuyRequest(token string, cookie string, data *UsdtTemplate) {
 	req.Header.SetUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36")
 	req.Header.SetMethod("POST")
 	// 构造发送数据
-	data.Token = token
+	data.Token = <-tokenChan // 直接拿到Token
 	b, _ := json.Marshal(data)
-
-	fmt.Println(fmt.Sprintf("data = %s", b))
 	// 发送数据体
 	req.SetBodyString(string(b))
-
 	resp := fasthttp.AcquireResponse()
-
-	cfg := &tls.Config{
-		MinVersion:               tls.VersionTLS12,
-		CurvePreferences:         []tls.CurveID{tls.X25519, tls.CurveP256},
-		PreferServerCipherSuites: true,
-		CipherSuites: []uint16{
-			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-		},
-	}
+	defer func() {
+		// 用完需要释放资源
+		fasthttp.ReleaseResponse(resp)
+		fasthttp.ReleaseRequest(req)
+	}()
 	client := &fasthttp.Client{
-		TLSConfig: cfg,
 	}
 	if err := client.Do(req, resp); err != nil {
 		println("Error:", err.Error())
 	} else {
 		bodyBytes := resp.Body()
-		fmt.Println(fmt.Sprintf("response %s ", string(bodyBytes)))
+		//logs.Info("Buy Response %s", gjson.GetBytes(bodyBytes, "status").String())
+		logs.Info("[Buy]Token 可用数量： %d", len(tokenChan))
+		logs.Info("Buy Response %s", string(bodyBytes))
 		BuyRequestChan <- string(bodyBytes)
 	}
+	logs.Info("[Consumption] %s [BuyRequest Start] %s End %s ", time.Since(e).String(), e.Format(format), time.Now().Format(format))
 }
