@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 bash_path=$(cd `dirname $0`; pwd)
 
 IFS=$'\n'

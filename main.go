@@ -25,9 +25,9 @@ type UsdtTemplate struct {
 
 const (
 	//httpsUrlToken  = "https://www.fcoin.pro/openapi/v1/lightning_deals/DBF9uRg3WBPwBCLKs0HrOQ/token"
-	httpsUrlToken  = "https://www.fcoin.pro/openapi/auth/v1/lightning_deals/DBF9uRg3WBPwBCLKs0HrOQ/token"
+	httpsUrlToken  = "https://www.fcoin.pro/openapi/auth/v1/lightning_deals/A-oY7xm0zzPtE3g7wFDx6A/token"
 	httpsUrlBlance = "https://exchange.fcoin.pro/openapi/v3/assets/wallet/balances"
-	httpsUrlBuy    = "https://www.fcoin.pro/openapi/auth/v1/lightning_deals/DBF9uRg3WBPwBCLKs0HrOQ/buy"
+	httpsUrlBuy    = "https://www.fcoin.pro/openapi/auth/v1/lightning_deals/A-oY7xm0zzPtE3g7wFDx6A/buy"
 )
 
 func GetConfig() map[string]string {

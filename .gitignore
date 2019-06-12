@@ -15,4 +15,6 @@ build
 ssynflood
 *ssynflood
 .DS_Store
-pirkey
+#pirkey
+*.sh
+*.sh.x.c
