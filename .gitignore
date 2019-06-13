@@ -18,3 +18,6 @@ ssynflood
 #pirkey
 *.sh
 *.sh.x.c
+
+# log
+*.log
