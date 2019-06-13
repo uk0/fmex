@@ -5,6 +5,7 @@ bash_path=$(cd `dirname $0`; pwd)
 IFS=$'\n'
 
 cd $bash_path
+rm -rf build/*.sh
 
    for line in `cat $bash_path/config`;do
     conf_host=`echo $line | awk -F "=" '{print$1}' `

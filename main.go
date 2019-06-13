@@ -26,14 +26,16 @@ type UsdtTemplate struct {
 	PaymentCurrency string `json:"payment_currency"`
 	Token           string `json:"token"`
 }
-
+var buyCount=0
 const (
 	typek  = "usdt"
+
 	format = "2006-01-02 15:04:05.000"
-	//httpsUrlToken  = "https://www.fcoin.pro/openapi/v1/lightning_deals/DBF9uRg3WBPwBCLKs0HrOQ/token"
-	httpsUrlToken  = "https://www.fcoin.pro/openapi/auth/v1/lightning_deals/ExUjmzScUDOX1K-MMFwmOg/token"
+
+
+	httpsUrlToken  = "https://www.fcoin.pro/openapi/auth/v1/lightning_deals/1IyHmanoptarEWmnPYON_A/token"
 	httpsUrlBlance = "https://www.fcoin.pro/openapi/v1/assets/wallet/balances/usdt"
-	httpsUrlBuy    = "https://www.fcoin.pro/openapi/auth/v1/lightning_deals/ExUjmzScUDOX1K-MMFwmOg/buy"
+	httpsUrlBuy    = "https://www.fcoin.pro/openapi/auth/v1/lightning_deals/1IyHmanoptarEWmnPYON_A/buy"
 )
 
 func GetConfig() map[string]string {
@@ -96,7 +98,7 @@ func loopWorker(data *UsdtTemplate, timeOut string) {
 			go BuyRequest(tokenChan, cookie, data)
 		}
 	}()
-	time.Sleep(60 * time.Minute)
+	time.Sleep(30 * time.Minute)
 	ticker.Stop()
 }
 
@@ -203,8 +205,16 @@ func BuyRequest(tokenChan chan string, cookie string, data *UsdtTemplate) {
 		bodyBytes := resp.Body()
 		//logs.Info("Buy Response %s", gjson.GetBytes(bodyBytes, "status").String())
 
-		logs.Info("Buy Response %s", string(bodyBytes))
+		logs.Info("BuyResponse %s", string(bodyBytes))
+		var kvMapBuy =map[string]string{}
+		_ = json.Unmarshal(bodyBytes, &kvMapBuy)
+		if !strings.Contains(string(bodyBytes),"too_many_request"){
+			buyCount++
+			logs.Info("BuyResponseSuccess  %s", string(bodyBytes))
+		}
 		BuyRequestChan <- string(bodyBytes)
 	}
+
+	logs.Info("BuySuccessCount %d",buyCount)
 	logs.Info("[Consumption] %s [BuyRequest Start] %s End %s ", time.Since(e).String(), e.Format(format), time.Now().Format(format))
 }
