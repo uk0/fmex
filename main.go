@@ -5,10 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"github.com/astaxie/beego/logs"
-	"github.com/tidwall/gjson"
 	"github.com/valyala/fasthttp"
 	"io/ioutil"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -28,11 +28,12 @@ type UsdtTemplate struct {
 }
 
 const (
+	typek  = "usdt"
 	format = "2006-01-02 15:04:05.000"
 	//httpsUrlToken  = "https://www.fcoin.pro/openapi/v1/lightning_deals/DBF9uRg3WBPwBCLKs0HrOQ/token"
-	httpsUrlToken  = "https://www.fcoin.pro/openapi/auth/v1/lightning_deals/A-oY7xm0zzPtE3g7wFDx6A/token"
-	httpsUrlBlance = "https://exchange.fcoin.pro/openapi/v3/assets/wallet/balances"
-	httpsUrlBuy    = "https://www.fcoin.pro/openapi/auth/v1/lightning_deals/A-oY7xm0zzPtE3g7wFDx6A/buy"
+	httpsUrlToken  = "https://www.fcoin.pro/openapi/auth/v1/lightning_deals/ExUjmzScUDOX1K-MMFwmOg/token"
+	httpsUrlBlance = "https://www.fcoin.pro/openapi/v1/assets/wallet/balances/usdt"
+	httpsUrlBuy    = "https://www.fcoin.pro/openapi/auth/v1/lightning_deals/ExUjmzScUDOX1K-MMFwmOg/buy"
 )
 
 func GetConfig() map[string]string {
@@ -42,7 +43,7 @@ func GetConfig() map[string]string {
 	return kv
 }
 
-func TestBlance() {
+func TestBlance() int64 {
 	req := fasthttp.AcquireRequest()
 	req.SetRequestURI(httpsUrlBlance)
 	req.Header.Set("Cookie", cookie)
@@ -54,9 +55,19 @@ func TestBlance() {
 		println("Error:", err.Error())
 	} else {
 		bodyBytes := resp.Body()
-		available := gjson.GetBytes(bodyBytes, "data.balances.5.available")
-		logs.Info("USDT Balance %s", available.String())
+		var kvMap = map[string]map[string]string{}
+		json.Unmarshal(bodyBytes, &kvMap)
+		balance, _ := strconv.ParseFloat(kvMap["data"]["available"], 32/64)
+		if int64(balance) <= 5000 {
+			logs.Info("Count %d", int64(balance)*10)
+			return int64(balance) * 10
+			/*
+			 抢购数额加一个逻辑，余额高于5000刀，数额就是50000，余额低于5000刀，数额等于余额×10，保留到整数，用int类型，以免位数太多数值溢出
+			*/
+		}
+		logs.Info("USDT Balance %f", balance)
 	}
+	return 50000
 }
 
 func initLog() (err error) {
@@ -95,36 +106,37 @@ func main() {
 		return
 	}
 	logs.Info("Start Successfully")
-	// ./ssynflood --time "1000" --name "zhangjianxin" --amount "50000.00000000" --type "usdt"  --id "DBF9uRg3WBPwBCLKs0HrOQ"
-	var name, amount, typek, ids, timeout string
+	// ./ssynflood --time "1000" --name "zhangjianxin"
+	var name, timeout string
 	flag.StringVar(&name, "name", "zhangjianxin", "name")
-	flag.StringVar(&amount, "amount", "50000.00000000", "amount")
-	flag.StringVar(&typek, "type", "usdt", "type")
-	flag.StringVar(&ids, "id", "DBF9uRg3WBPwBCLKs0HrOQ", "id")
 	flag.StringVar(&timeout, "time", "1000", "time")
 
 	flag.Parse()
-	logs.Info("TimeOut:", timeout)
+	logs.Info("Timer:", timeout)
 	logs.Info("用户名:", name)
 	logs.Info("使用资金类型:", typek)
-	logs.Info("买入货币ID:", ids)
-	logs.Info("买入数量:", amount)
 	logs.Info("启动时间:", time.Now().Format(format))
-
-	data := &UsdtTemplate{
-		ID:              ids,
-		PaymentCurrency: typek,
-		Amount:          amount,
-	}
 
 	var config = GetConfig()
 	cookie = config[name]
 
-	TestBlance()
+	amount := TestBlance()
+	ids := strings.Split(httpsUrlBuy, "/")
+	logs.Info("Select ID ", ids[len(ids)-2])
+	data := &UsdtTemplate{
+		ID:              ids[len(ids)-2],
+		PaymentCurrency: typek,
+		Amount:          strconv.FormatInt(amount, 10),
+	}
+	logs.Info("可买入数量:", amount)
 	loopWorker(data, timeout)
 }
 
 func GetToken(tokenChan chan string, cookie string) {
+	logs.Info("[Get]Token 可用数量： %d", len(tokenChan))
+	if len(tokenChan) >= 3 {
+		return
+	}
 	logs.Info("GetToken Start %s ", time.Now().Format(format))
 	e := time.Now()
 	req := fasthttp.AcquireRequest()
@@ -146,15 +158,22 @@ func GetToken(tokenChan chan string, cookie string) {
 		bodyBytes := resp.Body()
 		var reData = map[string]string{}
 		json.Unmarshal(bodyBytes, &reData)
-		logs.Info("[Get]Token 可用数量： %d", len(tokenChan))
+
 		logs.Info("GetToken Response ", string(bodyBytes))
-		tokenChan <- reData["data"]
+		if reData != nil && reData["data"] != "" {
+			tokenChan <- reData["data"]
+			logs.Info("GetTokenResponse.data ", string(bodyBytes))
+		}
 	}
 	logs.Info("[Consumption] %s [GetToken Start] %s End %s ", time.Since(e).String(), e.Format(format), time.Now().Format(format))
 
 }
 
 func BuyRequest(tokenChan chan string, cookie string, data *UsdtTemplate) {
+	logs.Info("[Buy]Token 可用数量： %d", len(tokenChan))
+	if len(tokenChan) <= 0 {
+		return
+	}
 	logs.Info("BuyRequest Start %s ", time.Now().Format(format))
 	e := time.Now()
 	req := fasthttp.AcquireRequest()
@@ -165,8 +184,10 @@ func BuyRequest(tokenChan chan string, cookie string, data *UsdtTemplate) {
 	req.Header.SetMethod("POST")
 	// 构造发送数据
 	data.Token = <-tokenChan // 直接拿到Token
+	logs.Info("[TokenSince] %s ", time.Since(e).String())
 	b, _ := json.Marshal(data)
 	// 发送数据体
+	logs.Info("[BuySendData] %s", string(b))
 	req.SetBodyString(string(b))
 	resp := fasthttp.AcquireResponse()
 	defer func() {
@@ -181,7 +202,7 @@ func BuyRequest(tokenChan chan string, cookie string, data *UsdtTemplate) {
 	} else {
 		bodyBytes := resp.Body()
 		//logs.Info("Buy Response %s", gjson.GetBytes(bodyBytes, "status").String())
-		logs.Info("[Buy]Token 可用数量： %d", len(tokenChan))
+
 		logs.Info("Buy Response %s", string(bodyBytes))
 		BuyRequestChan <- string(bodyBytes)
 	}
