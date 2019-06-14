@@ -2,21 +2,32 @@ package test
 
 import (
 	"fmt"
-	"github.com/fanliao/go-promise"
 	"testing"
+	"time"
 )
 
-func TestTask (t *testing.T){
-	task1 := func() (r interface{}, err error) {
-		return 10, nil
-	}
-	task2 := func(v interface{}) (r interface{}, err error) {
-		return v.(int) * 2, nil
+func TestTask(tt *testing.T) {
+
+	t := time.NewTicker(3 * time.Second)
+	defer t.Stop()
+
+	t2 := time.NewTicker(4 * time.Second)
+	defer t2.Stop()
+
+	for {
+
+		select {
+
+		case <-t.C:
+
+			fmt.Println(fmt.Sprintf("t.C ,%s",time.Now()))
+
+		case <-t2.C:
+
+			fmt.Println(fmt.Sprintf("t2.C ,%s",time.Now()))
+
+		}
+
 	}
 
-	f, _ := promise.Start(task1,true).Pipe(task2)
-	fmt.Println(f.OnSuccess(func(v interface{}) {
-		fmt.Println(v)
-	}))
 }
-
