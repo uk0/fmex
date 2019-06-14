@@ -104,7 +104,7 @@ func loopWorker(data *UsdtTemplate, timeOut string) {
 			go BuyRequest(tokenChan, cookie, data)
 		}
 	}()
-	time.Sleep(1 * time.Minute)
+	time.Sleep(30 * time.Minute)
 	ticker.Stop()
 }
 

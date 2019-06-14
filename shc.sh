@@ -7,5 +7,6 @@ shc -f result.sh -o 5.result
 shc -f 6.delete_log_sh.sh -o 6.delete_log_sh
 shc -f 10.scp_url_json.sh -o 10.scp_url_json
 shc -f 9.status.sh -o 9.status
+shc -f 0.host_cmd_to_config.sh -o 0.host_cmd_to_config
 
  rm -rf *.c
