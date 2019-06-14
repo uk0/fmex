@@ -1,5 +1,5 @@
 {
-  "token": "https://www.fcoin.pro/openapi/auth/v1/lightning_deals/Fgqn-tvK_GU3JrhaNNhfSA/token",
-  "buy": "https://www.fcoin.pro/openapi/auth/v1/lightning_deals/Fgqn-tvK_GU3JrhaNNhfSA/buy",
+  "token": "http://127.0.0.1:4000/token",
+  "buy": "http://127.0.0.1:4000/buy",
   "balance": "https://www.fcoin.pro/openapi/v1/assets/wallet/balances/usdt"
 }
