@@ -4,6 +4,8 @@ IFS=$'\n'
 
 for line in `cat $bash_path/config`;do
     conf_host=`echo $line | awk -F "=" '{print$1}' `
-    scp -i pirkey -r build/  root@$conf_host:/root/
+    ssh -i pirkey root@$conf_host "mkdir -p /root/build/"
+    scp -i pirkey build/*.json build/linux_ssynfloodv2 root@$conf_host:/root/build/
+    scp -i pirkey -r build/${conf_host}.sh  root@$conf_host:/root/build/
     echo "${conf_host} copy files finished"
 done

@@ -31,6 +31,7 @@ type UsdtTemplate struct {
 }
 
 var buyCount = 0
+var tokenCount = 0
 
 const (
 	typek  = "usdt"
@@ -230,14 +231,43 @@ func BuyRequest(tokenChan chan string, cookie string, data *UsdtTemplate) {
 		logs.Info("BuyResponseConsumption %s [BuyRequest Start] %s End %s ", time.Since(e).String(), e.Format(format), time.Now().Format(format))
 		var kvMapBuy = map[string]string{}
 		_ = json.Unmarshal(bodyBytes, &kvMapBuy)
-		if !strings.Contains(string(bodyBytes), "too_many_request") {
-			buyCount++
-			logs.Info("BuyResponseSuccess  %s", string(bodyBytes))
-			logs.Info("BuyResponseSuccessConsumption %s [BuyRequest Start] %s End %s ", time.Since(e).String(), e.Format(format), time.Now().Format(format))
+
+		// 请求过快 Token错误
+		if strings.Contains(string(bodyBytes), "lightning_deal_token_access_limit") {
+			tokenCount++
+			logs.Info("BuyResponseFail  %s", string(bodyBytes))
+			logs.Info("BuyResponseFailConsumption %s [BuyRequest Start] %s End %s ", time.Since(e).String(), e.Format(format), time.Now().Format(format))
+			return
 		}
+		// 请求过快
+		if strings.Contains(string(bodyBytes), "too_many_request") {
+			tokenCount++
+			logs.Info("BuyResponseFail  %s", string(bodyBytes))
+			logs.Info("BuyResponseFailConsumption %s [BuyRequest Start] %s End %s ", time.Since(e).String(), e.Format(format), time.Now().Format(format))
+			return
+		}
+		// 活动没有开始
+		if strings.Contains(string(bodyBytes), "lightning_deal_not_valid_range") {
+			tokenCount++
+			logs.Info("BuyResponseFail  %s", string(bodyBytes))
+			logs.Info("BuyResponseFailConsumption %s [BuyRequest Start] %s End %s ", time.Since(e).String(), e.Format(format), time.Now().Format(format))
+			return
+		}
+		// 活动结束
+		if strings.Contains(string(bodyBytes), "lightning_deal_finished") {
+			tokenCount++
+			logs.Info("BuyResponseFail  %s", string(bodyBytes))
+			logs.Info("BuyResponseFailConsumption %s [BuyRequest Start] %s End %s ", time.Since(e).String(), e.Format(format), time.Now().Format(format))
+			return
+		}
+
+		buyCount++
+		logs.Info("BuyResponseSuccess  %s", string(bodyBytes))
+		logs.Info("BuyResponseSuccessConsumption %s [BuyRequest Start] %s End %s ", time.Since(e).String(), e.Format(format), time.Now().Format(format))
 		BuyRequestChan <- string(bodyBytes)
 	}
 
+	logs.Info("TokenSuccessBuyFailCount %d", tokenCount)
 	logs.Info("BuySuccessCount %d", buyCount)
 
 }
