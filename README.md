@@ -5,6 +5,7 @@
 
 * first round 5000$ * 2  `10W FMEX` Date: 20190613
 * second round  5000$ * 4  `18W FMEX` Date: 20190614
+* ...... round  5000$ * 4  `20W FMEX` Date: 20190615
 
 
 ### Config 
