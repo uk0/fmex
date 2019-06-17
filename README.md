@@ -6,6 +6,8 @@
 * first round 5000$ * 2  `10W FMEX` Date: 20190613
 * second round  5000$ * 4  `18W FMEX` Date: 20190614
 * ...... round  5000$ * 4  `20W FMEX` Date: 20190615
+* ...... round  5000$ * 3  `15W FMEX` Date: 20190616
+* ...... round  5000$ * 6  `30W FMEX` Date: 20190617
 
 
 ### Config 
@@ -69,3 +71,19 @@
 
 * 更新抢购程序 `抛弃第一版，第二版更优`
 * 参数调整 `等待分析结果`
+
+
+### Quick Start
+
+
+* 0.host_cmd_to_config 
+* 检查Config 文件
+* 1.generate
+* 检查Build文件夹内容正常
+* scp_to_master.sh 
+* 将文件scp到Master 
+* 3.run  启动
+* 9.status 检查
+
+
+* 测试流程 run `3.run`起来 查看状态`9.status` 以及 日志 `5.result` 杀死`4.kill` 清理日志 `6.delete_log_sh`
