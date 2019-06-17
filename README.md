@@ -3,11 +3,11 @@
 ### Status 
 
 
-* first round 5000$ * 2  `10W FMEX` Date: 20190613
-* second round  5000$ * 4  `18W FMEX` Date: 20190614
-* ...... round  5000$ * 4  `20W FMEX` Date: 20190615
-* ...... round  5000$ * 3  `15W FMEX` Date: 20190616
-* ...... round  5000$ * 6  `30W FMEX` Date: 20190617
+* 1st round 5000$ * 2  `10W FMEX` Date: 20190613
+* 2nd round  5000$ * 4  `18W FMEX` Date: 20190614
+* 3rd round  5000$ * 4  `20W FMEX` Date: 20190615
+* 4th round  5000$ * 3  `15W FMEX` Date: 20190616
+* 5th round  5000$ * 6  `30W FMEX` Date: 20190617
 
 
 ### Config 
