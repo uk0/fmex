@@ -1,4 +1,4 @@
-package main
+package ssynflood
 
 import (
 	"encoding/json"
@@ -13,7 +13,6 @@ import (
 )
 
 var BuyRequestChan = make(chan string, 10000000)
-
 
 var cookie = ""
 var httpsUrlToken = ""
@@ -30,10 +29,12 @@ type UsdtTemplate struct {
 	PaymentCurrency string `json:"payment_currency"`
 	Token           string `json:"token"`
 }
-var buyCount=0
+
+var buyCount = 0
+var tokenCount = 0
+
 const (
 	typek  = "usdt"
-
 	format = "2006-01-02 15:04:05.000"
 )
 
@@ -92,20 +93,32 @@ func initLog() (err error) {
 	return
 }
 
-func loopWorker(data *UsdtTemplate, timeOut string) {
-	tokenChan := make(chan string)
-	t, _ := strconv.ParseInt(timeOut, 10, 64)
-	ticker := time.NewTicker(time.Duration(t) * time.Millisecond)
-	go func() {
-		for t := range ticker.C {
-			fmt.Println("Tick at", t)
-			go GetToken(tokenChan, cookie)
+func loopWorker(data *UsdtTemplate, tokenT string, BuyT string) {
 
+	tokenChan := make(chan string)
+	T1, _ := strconv.ParseInt(tokenT, 10, 64)
+	T2, _ := strconv.ParseInt(BuyT, 10, 64)
+
+	t1 := time.NewTicker(time.Duration(T1) * time.Millisecond)
+
+	t2 := time.NewTicker(time.Duration(T2) * time.Millisecond)
+
+	go func() {
+		for t := range t1.C {
+			fmt.Println("GetToken at", t)
+			go GetToken(tokenChan, cookie)
+		}
+	}()
+
+	go func() {
+		for t := range t2.C {
+			fmt.Println("BuyRequest at", t)
 			go BuyRequest(tokenChan, cookie, data)
 		}
 	}()
-	time.Sleep(1 * time.Minute)
-	ticker.Stop()
+	time.Sleep(30 * time.Minute)
+	t1.Stop()
+	t2.Stop()
 }
 
 func main() {
@@ -114,17 +127,18 @@ func main() {
 		return
 	}
 	logs.Info("Start Successfully")
-	// ./ssynflood --time "1000" --name "zhangjianxin"
-	var name, timeout string
+	// ./ver2.0 --token_time "1000" --buy_time "1000"  --name "zhangjianxin"
+	var name, tokenT, BuyT string
 	flag.StringVar(&name, "name", "zhangjianxin", "name")
-	flag.StringVar(&timeout, "time", "1000", "time")
+	flag.StringVar(&tokenT, "token_time", "1000", "token_time")
+	flag.StringVar(&BuyT, "buy_time", "1000", "buy_time")
 
 	flag.Parse()
-	logs.Info("Timer:", timeout)
+	logs.Info("Token Timer:", tokenT)
+	logs.Info("Buy Timer:", BuyT)
 	logs.Info("用户名:", name)
 	logs.Info("使用资金类型:", typek)
 	logs.Info("启动时间:", time.Now().Format(format))
-
 
 	var config = GetConfig()
 	var url = UrlConfig()
@@ -132,7 +146,7 @@ func main() {
 	httpsUrlToken = url["token"]
 	httpsUrlBlance = url["balance"]
 	httpsUrlBuy = url["buy"]
-
+	// 赋值
 	cookie = config[name]
 
 	amount := TestBlance()
@@ -144,12 +158,12 @@ func main() {
 		Amount:          strconv.FormatInt(amount, 10),
 	}
 	logs.Info("可买入数量:", amount)
-	loopWorker(data, timeout)
+	loopWorker(data, tokenT, BuyT)
 }
 
 func GetToken(tokenChan chan string, cookie string) {
-	logs.Info("[Get]Token 可用数量： %d", len(tokenChan))
-	logs.Info("GetToken Start %s ", time.Now().Format(format))
+	logs.Info("Token 可用数量： %d", len(tokenChan))
+	logs.Info("Token Start %s ", time.Now().Format(format))
 	e := time.Now()
 	req := fasthttp.AcquireRequest()
 	req.SetRequestURI(httpsUrlToken)
@@ -194,7 +208,7 @@ func BuyRequest(tokenChan chan string, cookie string, data *UsdtTemplate) {
 	req.Header.SetMethod("POST")
 	// 构造发送数据
 	data.Token = <-tokenChan // 直接拿到Token
-	logs.Info("[TokenSince] %s ", time.Since(e).String())
+	logs.Info("[BuyTokenSince] %s ", time.Since(e).String())
 	b, _ := json.Marshal(data)
 	// 发送数据体
 	logs.Info("[BuySendData] %s", string(b))
@@ -215,15 +229,45 @@ func BuyRequest(tokenChan chan string, cookie string, data *UsdtTemplate) {
 
 		logs.Info("BuyResponse %s", string(bodyBytes))
 		logs.Info("BuyResponseConsumption %s [BuyRequest Start] %s End %s ", time.Since(e).String(), e.Format(format), time.Now().Format(format))
-		var kvMapBuy =map[string]string{}
+		var kvMapBuy = map[string]string{}
 		_ = json.Unmarshal(bodyBytes, &kvMapBuy)
-		if !strings.Contains(string(bodyBytes),"too_many_request"){
-			buyCount++
-			logs.Info("BuyResponseSuccess  %s", string(bodyBytes))
-			logs.Info("BuyResponseSuccessConsumption %s [BuyRequest Start] %s End %s ", time.Since(e).String(), e.Format(format), time.Now().Format(format))
+
+		// 请求过快 Token错误
+		if strings.Contains(string(bodyBytes), "lightning_deal_token_access_limit") {
+			tokenCount++
+			logs.Info("BuyResponseFail  %s", string(bodyBytes))
+			logs.Info("BuyResponseFailConsumption %s [BuyRequest Start] %s End %s ", time.Since(e).String(), e.Format(format), time.Now().Format(format))
+			return
 		}
+		// 请求过快
+		if strings.Contains(string(bodyBytes), "too_many_request") {
+			tokenCount++
+			logs.Info("BuyResponseFail  %s", string(bodyBytes))
+			logs.Info("BuyResponseFailConsumption %s [BuyRequest Start] %s End %s ", time.Since(e).String(), e.Format(format), time.Now().Format(format))
+			return
+		}
+		// 活动没有开始
+		if strings.Contains(string(bodyBytes), "lightning_deal_not_valid_range") {
+			tokenCount++
+			logs.Info("BuyResponseFail  %s", string(bodyBytes))
+			logs.Info("BuyResponseFailConsumption %s [BuyRequest Start] %s End %s ", time.Since(e).String(), e.Format(format), time.Now().Format(format))
+			return
+		}
+		// 活动结束
+		if strings.Contains(string(bodyBytes), "lightning_deal_finished") {
+			tokenCount++
+			logs.Info("BuyResponseFail  %s", string(bodyBytes))
+			logs.Info("BuyResponseFailConsumption %s [BuyRequest Start] %s End %s ", time.Since(e).String(), e.Format(format), time.Now().Format(format))
+			return
+		}
+
+		buyCount++
+		logs.Info("BuyResponseSuccess  %s", string(bodyBytes))
+		logs.Info("BuyResponseSuccessConsumption %s [BuyRequest Start] %s End %s ", time.Since(e).String(), e.Format(format), time.Now().Format(format))
 		BuyRequestChan <- string(bodyBytes)
 	}
 
-	logs.Info("BuySuccessCount %d",buyCount)
+	logs.Info("TokenSuccessBuyFailCount %d", tokenCount)
+	logs.Info("BuySuccessCount %d", buyCount)
+
 }

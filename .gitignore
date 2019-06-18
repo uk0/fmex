@@ -16,7 +16,7 @@ ssynflood
 *ssynflood
 .DS_Store
 #pirkey
-*.sh
+*.run
 *.sh.x.c
 
 # log
