@@ -39,8 +39,6 @@ github.com/siddontang/ledisdb v0.0.0-20181029004158-becf5f38d373/go.mod h1:mF1Dp
 github.com/siddontang/rdb v0.0.0-20150307021120-fc89ed2e418d/go.mod h1:AMEsy7v5z92TR1JKMkLLoaOQk++LVnOKL3ScbJ8GNGA=
 github.com/ssdb/gossdb v0.0.0-20180723034631-88f6b59b84ec/go.mod h1:QBvMkMya+gXctz3kmljlUCu/yB3GZ6oee+dUozsezQE=
 github.com/syndtr/goleveldb v0.0.0-20181127023241-353a9fca669c/go.mod h1:Z4AUp2Km+PwemOoO/VB5AOx9XSsIItzFjoJlOSiYmn0=
-github.com/uk0/fcoin_prod v0.0.0-20190619093233-5cc667aa874c h1:bKm8KbuK2in3dw7ppDntJ3e0CISrMIt/pabF63YDDCs=
-github.com/uk0/fcoin_prod v0.0.0-20190619093233-5cc667aa874c/go.mod h1:w8xSW3LS5mFFc9XGWFhHrG+Jabx+AfT1KeWqOv8W+lQ=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.3.0 h1:++0WUtakkqBuHHY5JRFFl6O44I03XLBqxNnrBX0yH7Y=

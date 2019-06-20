@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fmex/cmd"
 	"fmt"
 	"github.com/codegangsta/cli"
-	cmd "./cmd"
 	"os"
 	"runtime"
 	"time"
