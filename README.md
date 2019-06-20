@@ -16,22 +16,22 @@
  
 * cmd
 ```text
-./femx --time "340" --name "smartguo_guo"
-./femx --token_time "300" --buy_time "250"  --name "smartguo_lu"
-./femx --token_time "350" --buy_time "250"  --name "smartguo_andrew"
-./femx --token_time "300" --buy_time "250"  --name "wing_big"
-./femx --token_time "300" --buy_time "250"  --name "wing_small"
-./femx --token_time "350" --buy_time "250"  --name "zhangjianxin"
-./femx --time "340"  --name "wing_small6"
-./femx --time "340"  --name "wing_small5"
-./femx --time "340"  --name "wing_small4"
-./femx --time "340"  --name "wing_small3"
-./femx --time "340"  --name "wing_small2"
-./femx --token_time "350" --buy_time "250"  --name "wing_small8"
-./femx --token_time "350" --buy_time "250"  --name "wing_small7"
-./femx --token_time "350" --buy_time "250"  --name "wing_small1"
-./femx --token_time "350" --buy_time "250"  --name "smartguo_xiu"
-./femx --time "340"  --name "smartguo_pang"
+./femx femx --time "340" --name "smartguo_guo"
+./femx femx --token_time "300" --buy_time "250"  --name "smartguo_lu"
+./femx femx --token_time "350" --buy_time "250"  --name "smartguo_andrew"
+./femx femx --token_time "300" --buy_time "250"  --name "wing_big"
+./femx femx --token_time "300" --buy_time "250"  --name "wing_small"
+./femx femx --token_time "350" --buy_time "250"  --name "zhangjianxin"
+./femx femx --time "340"  --name "wing_small6"
+./femx femx --time "340"  --name "wing_small5"
+./femx femx --time "340"  --name "wing_small4"
+./femx femx --time "340"  --name "wing_small3"
+./femx femx --time "340"  --name "wing_small2"
+./femx femx --token_time "350" --buy_time "250"  --name "wing_small8"
+./femx femx --token_time "350" --buy_time "250"  --name "wing_small7"
+./femx femx --token_time "350" --buy_time "250"  --name "wing_small1"
+./femx femx --token_time "350" --buy_time "250"  --name "smartguo_xiu"
+./femx femx --time "340"  --name "smartguo_pang"
 ```
 
 * host 

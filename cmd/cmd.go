@@ -143,8 +143,11 @@ func NewBalanceCommand() cli.Command {
 		Usage: "get all user balance",
 		Action: func(c *cli.Context) error {
 			var kvs = GetConfig()
-			for name, v := range kvs{
-				GetBlance(name,v,UrlConfig()["balance"])
+			for name, v := range kvs {
+				GetBlance(name, v, UrlConfig()["balance"])
+			}
+			err := cli.ShowAppHelp(c) //这个是打印app的help界面
+			if err != nil {
 			}
 			return nil
 		},
@@ -159,7 +162,7 @@ func NewServerCommand() cli.Command {
 			StartTestServer(c.String("port"))
 			return nil
 		}, Flags: []cli.Flag{
-			cli.StringFlag{Name: "port", Usage: "server is running on port"},          // name
+			cli.StringFlag{Name: "port", Usage: "server is running on port"}, // name
 		},
 	}
 }
@@ -170,24 +173,26 @@ func NewFmexCommand() cli.Command {
 		Usage: "start fmex services",
 		Action: func(c *cli.Context) error {
 
-
-			NewFemx(c.String("name"),c.String("token_time"),c.String("buy_time"))
-			return cli.ShowAppHelp(c)
+			NewFemx(c.String("name"), c.String("token_time"), c.String("buy_time"))
+			err := cli.ShowAppHelp(c) //这个是打印app的help界面
+			if err != nil {
+			}
+			return nil
 		}, Flags: []cli.Flag{
-			cli.StringFlag{Name: "name", Usage: "user name"},          // name
-			cli.StringFlag{Name: "token_time", Usage: "token timer"},   // token
-			cli.StringFlag{Name: "buy_time", Usage: "buy timer"}, // buy
+			cli.StringFlag{Name: "name", Usage: "user name"},         // name
+			cli.StringFlag{Name: "token_time", Usage: "token timer"}, // token
+			cli.StringFlag{Name: "buy_time", Usage: "buy timer"},     // buy
 		},
 	}
 }
 
-func NewFemx(name string,tokenT string,BuyT string){
+func NewFemx(name string, tokenT string, BuyT string) {
 	err := initLog()
 	if err != nil {
 		return
 	}
 
-	if (name=="" || len(name)==0) && (tokenT=="" || len(tokenT)==0) && (BuyT=="" || len(BuyT)==0){
+	if (name == "" || len(name) == 0) && (tokenT == "" || len(tokenT) == 0) && (BuyT == "" || len(BuyT) == 0) {
 		logs.Error(" params is null")
 		return
 	}
