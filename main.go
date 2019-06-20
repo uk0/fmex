@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/codegangsta/cli"
-	"github.com/uk0/fcoin_prod/cmd"
+	cmd "./cmd"
 	"os"
 	"runtime"
 	"time"
